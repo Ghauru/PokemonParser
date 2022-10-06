@@ -19,50 +19,77 @@ def parse_links_to_pages(body):
     return page_count_func
 
 
-def pokemon(pokemon_name, dictionary):
-    print('Pokemon stats for ' + pokemon_name + ':')
-    for key in dictionary.keys():
-        if pokemon_name.lower() in key:
-            return dictionary[key]
+def parse_links_to_pokemons(body):
+    soup = BeautifulSoup(body, 'html.parser')
+    temp_dict = {}
+    elems = soup.find_all("a", "soft3-item soft-fix")
+    hrefs = list(map(lambda x: x.get('href'), elems))
+    for elem in hrefs:
+        temp_dict[elem] = elem[elem.find('-') + 1:elem.rfind('.')].title()
+    return temp_dict
 
 
-resp = url_decode('https://pokemongolife.ru/pokemony/')
-soup = BeautifulSoup(resp, 'html.parser')
-page_count = parse_links_to_pages(soup)
-pages = []
-pokemons = dict()
+def parse_pokemon_page(body, href, pokemon_name):
+    soup = BeautifulSoup(body, 'html.parser')
+    attributes_block = soup.find_all("div", "pokemon-ability-info color-bg color-lightblue match active")[0]\
+        .find_all("li")
+    attributes = dict()
+    for li in attributes_block:
+        name = li.find("span", "attribute-title")
+        value = li.find("span", "attribute-value")
+        if name and value:
+            attributes[name.get_text()] = value.get_text()
+            attributes_list = [text for text in name.stripped_strings]
+            for attribute in attributes_list:
+                if attribute == 'Пол':
+                    if len(value.find_all('i')) > 1:
+                        attributes[name.get_text()] = 'М/Ж'
+                    else:
+                        for pol in value.find_all('i'):
+                            if 'female' in str(pol):
+                                attributes[name.get_text()] = 'Ж'
+                            else:
+                                attributes[name.get_text()] = 'М'
+
+    pokemon = Pokemon()
+    if 'Вес' in attributes:
+        pokemon.weight = attributes['Вес']
+    if 'Рост' in attributes:
+        pokemon.height = attributes['Рост']
+    if 'Пол' in attributes:
+        pokemon.gender = attributes['Пол']
+    if 'Вид' in attributes:
+        pokemon.kind = attributes['Вид']
+
+    pokemon.name = pokemon_name
+    pokemon.href = href
+    pokemon.pretty_info()
+    return pokemon
 
 
-for i in range(1,page_count+1):
-    pages.append('https://pokemongolife.ru/pokemony/page/' + str(i))
-    resp_page = url_decode(pages[i-1])
-    soup_page = BeautifulSoup(resp, 'html.parser')
-    for info in soup_page.find_all('div', id='dle-content'):
-        for a in info.find_all('a'):
-            if 'pokemony' not in str(a.get('href')):
-                pokemons[(str(a.get('href')))] = ''
-                resp_pokemon = url_decode(str(a.get('href')))
-                if resp_pokemon is not None:
-                    soup_pokemon = BeautifulSoup(resp_pokemon, 'html.parser')
-                    attrs = soup_pokemon.find_all("div", "pokemon-ability-info color-bg color-lightblue match active")[
-                        0].find_all("li")
-                    for li in attrs:
-                        name = li.find("span", "attribute-title")
-                        v = li.find("span", "attribute-value")
-                        if name and v:
-                            lis1 = [text for text in name.stripped_strings]
-                            lis2 = [text for text in v.stripped_strings]
-                            for k in lis1:
-                                if k == 'Пол':
-                                    if len(v.find_all('i')) > 1:
-                                        pokemons[(str(a.get('href')))] += 'Пол: М/Ж' + ' '
-                                    else:
-                                        for pol in v.find_all('i'):
-                                            if 'female' in str(pol):
-                                                pokemons[(str(a.get('href')))] += 'Пол: Ж' + ' '
-                                            else:
-                                                pokemons[(str(a.get('href')))] += 'Пол: М' + ' '
-                                else:
-                                    pokemons[(str(a.get('href')))] += str(k) + ' '
-                            for m in lis2:
-                                pokemons[(str(a.get('href')))] += ': ' + str(m) + ' '
+class Pokemon:
+    # вес, ссылка, рост, пол, вид, имя
+    def __init__(self):
+        self.weight = None
+        self.href = None
+        self.height = None
+        self.gender = None
+        self.kind = None
+        self.name = None
+
+    def pretty_info(self):
+        print("Name: " + self.name, "Weight: " + self.weight, "Link: " + self.href, "Height: " + self.height, "Gender: " + self.gender,
+              "Kind: " + self.kind, sep='\n')
+
+
+main_soup = BeautifulSoup('https://pokemongolife.ru/pokemony/', 'html.parser')
+pages_count = parse_links_to_pages(main_soup)
+
+links_to_pages = list(map(lambda x: 'https://pokemongolife.ru/pokemony/page/' + str(x) + '/', range(1, pages_count)))
+
+for link_to_page in links_to_pages:
+    resp_page = url_decode(link_to_page)
+    links_to_pokemons = parse_links_to_pokemons(resp_page)
+    for link_to_pokemon in links_to_pokemons.keys():
+        pokemon_page_resp = url_decode(link_to_pokemon)
+        new_pokemon = parse_pokemon_page(pokemon_page_resp, link_to_pokemon, links_to_pokemons[link_to_pokemon])
