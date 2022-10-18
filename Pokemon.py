@@ -12,6 +12,3 @@ class Pokemon:
         print("Name: " + self.name, "Weight: " + self.weight, "Link: " + self.href, "Height: " + self.height,
               "Gender: " + self.gender,
               "Kind: " + self.kind, sep='\n')
-
-    def stats(self):
-        return [self.name, str(self.href), self.weight, self.height, self.gender, self.kind]

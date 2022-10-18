@@ -1,29 +1,26 @@
 from bs4 import BeautifulSoup
 import my_functions as m
 import sqlite3
+import re
 
 
 sqlite_connect = sqlite3.connect('pokemons.db')
-sqlite_create_table = 'CREATE TABLE IF NOT EXISTS pokemons (id INTEGER PRIMARY KEY, name TEXT UNIQUE not null,' \
-                        ' link TEXT UNIQUE not null, weight INTEGER , height INTEGER, gender TEXT not null, kind TEXT not null)'
+sqlite_create_table = 'CREATE TABLE IF NOT EXISTS pokemons (id INTEGER PRIMARY KEY, name TEXT not null,' \
+                        ' link TEXT UNIQUE not null, weight REAL, height REAL, gender TEXT, kind TEXT)'
 cursor = sqlite_connect.cursor()
 cursor.execute(sqlite_create_table)
 cursor.close()
-sqlite_connect.close()
 
 
 def pokemon_to_database(pokemon):
-    sqlite_connection = sqlite3.connect('pokemons.db')
-    cur = sqlite_connection.cursor()
-    cur.execute('PRAGMA table_info("pokemons")')
-    column_names = [i[1] for i in cur.fetchall()]
-    for i in range(1, len(column_names)):
-        print('i= ' + pokemon.stats()[i-1])
-        sql_insert_query = "INSERT INTO pokemons(" + column_names[i] + ") VALUES('{}')".format(pokemon.stats()[i-1])
-        cur.execute(sql_insert_query)
-        sqlite_connection.commit()
-    cur.close()
-    sqlite_connection.close()
+    weight = float(re.findall(r'-?\d+\.?\d*', pokemon.weight)[0])
+    height = float(re.findall(r'-?\d+\.?\d*', pokemon.height)[0])
+    sql_insert_query = f'INSERT INTO pokemons(name, link, weight, height, gender, kind) VALUES("{pokemon.name}",' \
+                       f' "{pokemon.href}", "{weight}", "{height}", "{pokemon.gender}", "{pokemon.kind}")'
+    cursor2 = sqlite_connect.cursor()
+    cursor2.execute(sql_insert_query)
+    sqlite_connect.commit()
+    cursor2.close()
 
 
 main_soup = BeautifulSoup(m.url_decode('https://pokemongolife.ru/pokemony/'), 'html.parser')
