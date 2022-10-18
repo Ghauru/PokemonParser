@@ -64,5 +64,5 @@ def parse_pokemon_page(body, href, pokemon_name):
 
     pokemon.name = pokemon_name
     pokemon.href = href
-    pokemon.pretty_info()
+    #pokemon.pretty_info()
     return pokemon
