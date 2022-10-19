@@ -5,7 +5,7 @@ import re
 
 
 sqlite_connect = sqlite3.connect('pokemons.db')
-sqlite_create_table = 'CREATE TABLE IF NOT EXISTS pokemons (id INTEGER PRIMARY KEY, name TEXT not null,' \
+sqlite_create_table = 'CREATE TABLE IF NOT EXISTS pokemons (id INTEGER PRIMARY KEY, name TEXT UNIQUE not null,' \
                         ' link TEXT UNIQUE not null, weight REAL, height REAL, gender TEXT, kind TEXT)'
 cursor = sqlite_connect.cursor()
 cursor.execute(sqlite_create_table)
@@ -30,15 +30,27 @@ def pokemon_to_database(pokemon, index):
     return index + 1
 
 
-def delete_pokemon_byid(index):
+def delete_pokemon_db(index=None, name=None, link=None):
     cursor3 = sqlite_connect.cursor()
-    sql_insert_query = f'DELETE FROM pokemons WHERE id = "{index}"'
+    if index:
+        sql_insert_query = f'DELETE FROM pokemons WHERE id = "{index}"'
+    elif name:
+        sql_insert_query = f'DELETE FROM pokemons WHERE name = "{name}"'
+    else:
+        sql_insert_query = f'DELETE FROM pokemons WHERE link = "{link}"'
     try:
         cursor3.execute(sql_insert_query)
     except Exception as error:
         print(error)
     sqlite_connect.commit()
     cursor3.close()
+
+
+def select_column(parameter):
+    cursor4 = sqlite_connect.cursor()
+    sql_insert_query = f'SELECT "{parameter}" from pokemons'
+    print(list(cursor4.execute(sql_insert_query)))
+    cursor4.close()
 
 
 pokemon_index = 1
