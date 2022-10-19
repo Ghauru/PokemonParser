@@ -7,8 +7,8 @@ from Pokemon import Pokemon
 def url_decode(url):
     try:
         return urllib.request.urlopen(url).read().decode('utf-8')
-    except:
-        return None
+    except Exception as error:
+        print(error)
 
 
 def parse_links_to_pages(body):
@@ -64,5 +64,4 @@ def parse_pokemon_page(body, href, pokemon_name):
 
     pokemon.name = pokemon_name
     pokemon.href = href
-    #pokemon.pretty_info()
     return pokemon
